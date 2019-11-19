@@ -21,11 +21,11 @@ docker run -d \
   -p 5000:5000 \
   --restart=always \
   --name registry \
-  -v /registry/auth \
+  -v /registry/auth:/registry/auth:Z \
   -e "REGISTRY_AUTH=htpasswd" \
   -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm" \
   -e REGISTRY_AUTH_HTPASSWD_PATH=/registry/auth/htpasswd \
-  -v /registry/certs \
+  -v /registry/certs:/registry/certs:Z \
   -e REGISTRY_HTTP_TLS_CERTIFICATE=/registry/certs/ca.crt \
   -e REGISTRY_HTTP_TLS_KEY=/registry/certs/ca.key \
   registry:2
@@ -46,3 +46,4 @@ restart all master apps
 Sources:
 https://www.itzgeek.com/how-tos/linux/centos-how-tos/how-to-setup-docker-private-registry-on-centos-7-ubuntu-16-04.html
 https://docs.docker.com/registry/deploying/
+https://www.projectatomic.io/blog/2015/06/using-volumes-with-docker-can-cause-problems-with-selinux/
