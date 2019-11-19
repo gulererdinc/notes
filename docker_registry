@@ -1,0 +1,48 @@
+##################################################################################
+# Docker registry on Centos/RHEL 7 (with basic aauthentication and certificates) #
+#                                                                                #
+# Sources: See below                                                             #
+##################################################################################
+
+# pull image
+docker pull registry
+
+# create cert
+mkdir -p /registry/certs
+openssl req -newkey rsa:4096 -nodes -sha256 -keyout /registry/certs/ca.key -x509 -days 365 -out /registry/certs/ca.crt
+
+# create auth
+mkdir -p /registry/auth
+docker run --entrypoint htpasswd registry:2 -Bbn testuser testpassword > /registry/auth/htpasswd
+docker container stop registry
+
+# run registry with cert + auth
+docker run -d \
+  -p 5000:5000 \
+  --restart=always \
+  --name registry \
+  -v /registry/auth \
+  -e "REGISTRY_AUTH=htpasswd" \
+  -e "REGISTRY_AUTH_HTPASSWD_REALM=Registry Realm" \
+  -e REGISTRY_AUTH_HTPASSWD_PATH=/registry/auth/htpasswd \
+  -v /registry/certs \
+  -e REGISTRY_HTTP_TLS_CERTIFICATE=/registry/certs/ca.crt \
+  -e REGISTRY_HTTP_TLS_KEY=/registry/certs/ca.key \
+  registry:2
+
+# test login
+docker login mydomain.local:5000
+
+# Self-signed certificate import for docker trust
+mkdir /etc/docker/certs.d/mydomain.local:5000
+cp /registry/certs/ca.crt /etc/docker/certs.d/mydomain.local:5000/
+
+# Add self-signed certificate for pirvate registry in Openshift/OKD
+cp /registry/certs/ca.crt /etc/pki/tls/certs/
+update-ca-trust
+restart all master apps
+
+############################################################################################################################
+Sources:
+https://www.itzgeek.com/how-tos/linux/centos-how-tos/how-to-setup-docker-private-registry-on-centos-7-ubuntu-16-04.html
+https://docs.docker.com/registry/deploying/
